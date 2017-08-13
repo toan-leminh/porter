@@ -205,7 +205,7 @@ class TradeController extends Controller
                 ->subject($data['mail_subject'])
              ;
         });
-        $request->session()->flash('alert-success', 'Email was sent to' . ($data['type'] ? 'Buyer' : 'Seller') . '!');
+        $request->session()->flash('alert-success', 'Email was sent to ' . ($data['type'] ? 'Buyer' : 'Seller') . '!');
 
         // Create user
         $user = User::where(['email' => $data['email']])->first();
