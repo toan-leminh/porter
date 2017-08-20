@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Lib\Transferwise;
 use App\Mail\GeneralMail;
+use App\QuoteDetail;
+use App\QuoteHd;
 use App\TemporaryQuotes;
 use App\User;
 use Illuminate\Http\Request;
 use DB;
 use Illuminate\Support\Str;
 use Mail;
+use Symfony\Component\HttpFoundation\ParameterBag;
 use View;
 use Auth;
 use Hash;
@@ -33,6 +36,10 @@ class TradeController extends Controller
      */
     public function offer(Request $request)
     {
+        // Get sessiondata and remove  if existed
+        $data = $request->session()->pull('quote_data', []);
+        $request->request = new ParameterBag($data);
+
         // Get all countries
         $countries = DB::table('country_mst')->pluck('name', 'country_cd');
 
@@ -41,10 +48,11 @@ class TradeController extends Controller
             'JPY' => 'JPY',
             'VND' => 'VND',
         ];
+
+        // Get content of mail templates
         $emailTemplates = [
             'default' => ['name' => 'デフォルト', 'template' => 'email.quotes.default']
         ];
-
         foreach ($emailTemplates as $i=>$tmp){
             $emailTemplates[$i]['content'] = View::make($tmp['template'])->render();
         }
@@ -96,6 +104,7 @@ class TradeController extends Controller
         }
 
         if($request->get('confirm_submit')){
+            // Validate submit data
             $this->validate($request, [
                 'partner_email' => 'required|string|email|max:255',
                 'mail_subject' => 'required|string|max:255',
@@ -108,14 +117,140 @@ class TradeController extends Controller
             $passcode = $request->get('passcode');
             $temporaryQuotes = TemporaryQuotes::where(['email' => $email, 'code' => $passcode])->first();
             if($temporaryQuotes){
-                return redirect()->route('trade.confirm')->with(['data' => $request->all()]);
+                // Send data to confirm page
+                $data = $request->all();
+                $data['temporary_quote_id'] = $temporaryQuotes->id;
+
+                $request->session()->put('quote_data', $data);
+
+                return redirect()->route('trade.confirm');
             }else{
-                redirect()->route('trade.offer')->with(['error'=>'Email and Passcode are not matched. Please check again!'])->withInput();
+
+                return redirect()->route('trade.offer')->with(['error'=>'Email and Passcode are not matched. Please check again!'])->withInput();
             }
 
         }
 
         return redirect()->route('trade.offer')->with(['status'=>'email_checked'])->withInput();
+    }
+
+    /**
+     * Show the application dashboard.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function confirm(Request $request)
+    {
+        $quoteData = $request->session()->get('quote_data');
+        if($quoteData == null){
+            return redirect()->route('trade.offer');
+        }
+
+        return view('trade.confirm', compact('data'));
+    }
+
+    /**
+     * Show confirm screen
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function postConfirm(Request $request){
+        // Get session data
+        $quoteData = $request->session()->get('quote_data');
+        if($quoteData == null){
+            return redirect()->route('trade.offer');
+        }
+
+
+        $this->validate($request, [
+            'partner_email' => 'required|string|email|max:255',
+            'mail_subject' => 'required|string|max:255',
+            'mail_content' => 'required',
+        ]);
+
+        // Get post data
+        $data = $request->all();
+
+        // Send email to partner
+        Mail::raw($data['mail_content'], function ($messages) use ($data) {
+            $messages->to($data['partner_email'])
+                ->subject($data['mail_subject'])
+             ;
+        });
+        $request->session()->flash('alert-success', 'Email was sent to ' . ($quoteData['type'] ? 'Buyer' : 'Seller') . '!');
+
+        // Create user if not exit
+        $user = User::where(['email' => $quoteData['email']])->first();
+        if($user){
+            $hasRegistered = true;
+        }else{
+            $hasRegistered = false;
+            // Get temporary quote data
+            $temporaryQuote = TemporaryQuotes::find($quoteData['temporary_quote_id']);
+
+            $user = new User([
+                'email' => $quoteData['email'],
+                'password' => Hash::make($temporaryQuote->code),
+                'name' => $quoteData['first_name'] . ' ' . $quoteData['last_name']
+            ]);
+            $user->save();
+        }
+
+        //TODO Save Offer
+        // Insert data to quote HD table
+        // Seller
+        if($quoteData['type'] == '1'){
+            // Save to quote_hd table in database
+            $quoteHd = new QuoteHd([
+                'seller_email' => $quoteData['email'],
+                'seller_name' => $quoteData['first_name'] . ' ' . $quoteData['last_name'],
+                'buyer_email' => $quoteData['partner_email'],
+                'buyer_country' => $quoteData['partner_country'],
+                'customer_id' => $user->id,
+                'trading_fee' => $quoteData['trading_fee'],
+                'total_amount' => $quoteData['total_amount']
+            ]);
+            $quoteHd->save();
+        // Buyer
+        }elseif($quoteData['type'] == '2'){
+            // Save to quote_hd table in database
+            $quoteHd = new QuoteHd([
+                'buyer_email' => $quoteData['email'],
+                'buyer_name' => $quoteData['first_name'] . ' ' . $quoteData['last_name'],
+                'seller_email' => $quoteData['partner_email'],
+                'seller_country' => $quoteData['partner_country'],
+                'customer_id' => $user->id,
+                'trading_fee' => $quoteData['trading_fee'],
+                'total_amount' => $quoteData['total_amount']
+            ]);
+            $quoteHd->save();
+        }
+        // Save to quote_detail table in database
+        $quoteDetailList = [];
+        foreach ($quoteData['trade_item'] as $item){
+            $quoteDetail = new QuoteDetail($item);
+            $quoteDetailList[] = $quoteDetail;
+        }
+        $quoteHd->quoteDetails()->saveMany($quoteDetailList);
+
+        // Remove session data
+        //$request->session()->forget('quote_data');
+        //$request->session()->flush();
+
+        // In case already registered user, check login or redirect to login screen
+        if($hasRegistered){
+            // Redirect to home page
+            if(!Auth::check()){
+                $request->session()->flash('alert-warning', 'You are member already. Please login to access dashboard screen');
+            }
+        // In case new user, auto login
+        }else{
+            Auth::login($user, true);
+            $request->session()->flash('alert-success', 'We have created user for you. Welcome to My Transporter!');
+        }
+
+        // Redirect to Dashboard screen
+        return redirect()->route('home');
     }
 
     /**
@@ -155,7 +290,7 @@ class TradeController extends Controller
                     ]
                 ];
             }
-        // Cant get result from Transferwise
+            // Cant get result from Transferwise
         }else{
             $response = [
                 'status' => [
@@ -166,68 +301,5 @@ class TradeController extends Controller
         }
 
         return response()->json($response);
-    }
-
-    /**
-     * Show the application dashboard.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function confirm(Request $request)
-    {
-        $data = $request->session()->get('data');
-
-//        dd($data);
-        return view('trade.confirm', compact('data'));
-    }
-
-    /**
-     * Show confirm screen
-     * @param Request $request
-     */
-    public function postConfirm(Request $request){
-        $this->validate($request, [
-            'partner_email' => 'required|string|email|max:255',
-            'mail_subject' => 'required|string|max:255',
-            'mail_content' => 'required',
-            'email' => 'required|string|email|max:255',
-            'first_name' => 'required|string|max:50',
-            'last_name' => 'required|string|max:50',
-            'type' => 'required|integer',
-        ]);
-
-        // Get post data
-        $data = $request->all();
-
-        // Send email to partner
-        Mail::raw($data['mail_content'], function ($messages) use ($data) {
-            $messages->to($data['partner_email'])
-                ->subject($data['mail_subject'])
-             ;
-        });
-        $request->session()->flash('alert-success', 'Email was sent to ' . ($data['type'] ? 'Buyer' : 'Seller') . '!');
-
-        // Create user
-        $user = User::where(['email' => $data['email']])->first();
-        if($user){
-            // Redirect to home page
-            if(!Auth::check()){
-                $request->session()->flash('alert-warning', 'You are member already. Please login to access dashboard screen');
-            }
-            return redirect()->route('home');
-        }
-        $password = Str::random(8);
-        $user = new User([
-            'email' => $data['email'],
-            'password' => Hash::make($password),
-            'name' => $data['first_name'] . $data['last_name']
-        ]);
-        $user->save();
-        Auth::login($user, true);
-
-        //TODO Save Offer
-        // Redirect to Dashboard screen
-        $request->session()->flash('alert-warning', 'We have created user for you. Please check email');
-        return redirect()->route('home');
     }
 }

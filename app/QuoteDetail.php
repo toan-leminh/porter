@@ -2,19 +2,16 @@
 
 namespace App;
 
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 
-class User extends Authenticatable
+class QuoteDetail extends Model
 {
-    use Notifiable;
-
     /**
      * The table associated with the model.
      *
      * @var string
      */
-    protected $table = 'customer';
+    protected $table = 'quote_detail';
 
     /**
      * The name of the "created at" column.
@@ -30,22 +27,20 @@ class User extends Authenticatable
      */
     const UPDATED_AT = 'dt_lastupdate';
 
-
     /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password', 'code', 'hashkey', 'company', 'country_cd', 'addr1', 'addr2', 'addr3'
+        'quote_hd_id', 'name', 'quantity', 'price'
     ];
 
     /**
-     * The attributes that should be hidden for arrays.
-     *
-     * @var array
+     *  Get quote Hd
      */
-    protected $hidden = [
-        'password', 'remember_token',
-    ];
+    public function quoteHd()
+    {
+        return $this->belongsTo('App\QuoteHd', 'quote_hd_id');
+    }
 }

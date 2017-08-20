@@ -45,15 +45,6 @@
                             </span>
                     @endif
                 </div>
-                <input type="hidden" name="total_amount" value="{{ $data['total_amount']}}">
-                <input type="hidden" name="trading_fee" value="{{ $data['trading_fee']}}">
-                <input type="hidden" name="trading_currency" value="{{ $data['trading_currency']}}">
-                <input type="hidden" name="item_currency" value="{{ $data['item_currency']}}">
-
-                <input type="hidden" name="email" value="{{ $data['email']}}">
-                <input type="hidden" name="first_name" value="{{ $data['first_name']}}">
-                <input type="hidden" name="last_name" value="{{ $data['last_name']}}">
-                <input type="hidden" name="type" value="{{ $data['type']}}">
 
                 <div class="form-group text-center">
                     <input type="submit" class="btn btn-primary" name="confirm_submit" value="Send">
