@@ -202,6 +202,7 @@ class TradeController extends Controller
         if($quoteData['type'] == '1'){
             // Save to quote_hd table in database
             $quoteHd = new QuoteHd([
+                'seller_intr' => $user->id,
                 'seller_email' => $quoteData['email'],
                 'seller_name' => $quoteData['first_name'] . ' ' . $quoteData['last_name'],
                 'buyer_email' => $quoteData['partner_email'],
@@ -215,6 +216,7 @@ class TradeController extends Controller
         }elseif($quoteData['type'] == '2'){
             // Save to quote_hd table in database
             $quoteHd = new QuoteHd([
+                'buyer_intr' => $user->id,
                 'buyer_email' => $quoteData['email'],
                 'buyer_name' => $quoteData['first_name'] . ' ' . $quoteData['last_name'],
                 'seller_email' => $quoteData['partner_email'],
