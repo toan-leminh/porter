@@ -37,10 +37,12 @@ class TradeController extends Controller
     public function offer(Request $request)
     {
         // Get sessiondata and remove  if existed
-        $quoteData = $request->session()->pull('quote_data', null);
+        $quoteData = $request->session()->get('quote_data', null);
+
         $confirmBack = false;
         if($quoteData){
             $request->session()->flashInput($quoteData);
+            $request->session()->remove('quote_data');
             $confirmBack = true;
         }
 
@@ -86,7 +88,7 @@ class TradeController extends Controller
             $firstName = $request->get('first_name');
             $lastName = $request->get('last_name');
 
-            $randomCode = str_pad(rand(0, 999999), '0', STR_PAD_LEFT);
+            $randomCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
 
             // Create temporary quote with random code
             $temporaryQuotes = TemporaryQuotes::where(['email' => $email])->first();
@@ -247,8 +249,8 @@ class TradeController extends Controller
         $quoteHd->quoteDetails()->saveMany($quoteDetailList);
 
         // Remove session data
-        //$request->session()->forget('quote_data');
-        //$request->session()->flush();
+        $request->session()->forget('quote_data');
+        $request->session()->flush();
 
         // In case already registered user, check login or redirect to login screen
         if($hasRegistered){

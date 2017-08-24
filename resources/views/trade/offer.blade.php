@@ -337,7 +337,7 @@
             // Calculate temporary quotation
             function calculate() {
                 // Validate
-                if($('form').valid()){
+                //if($('form').valid()){
                     var itemCurrency = $('#item_currency').val();
                     var tradingCurrency = $('#trading_currency').val();
                     var amount = 0;
@@ -392,7 +392,7 @@
                                 $("body").removeClass("loading");
                             });
 
-                }
+                //}
             }
 
             // Update mail content
