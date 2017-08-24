@@ -74,6 +74,7 @@
                     </div>
 
                     <br>
+                    <div id="proceed_session"></div>
                     @if (session('status') && session('status') == 'email_checked')
                         <div class="alert alert-success">
                             Email has been sent!
@@ -85,7 +86,6 @@
                             {{ session('error') }}
                         </div>
                     @endif
-                    <div id="proceed_session"></div>
 
                     @if ( $confirmBack || (session('status') && in_array(session('status'),['email_checked', 'trade_input'])))
                     {{--@if(true)--}}
