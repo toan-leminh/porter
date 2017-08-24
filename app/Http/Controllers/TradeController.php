@@ -103,8 +103,8 @@ class TradeController extends Controller
                 'name' => $firstName. $lastName, 'code' => $randomCode
             ]));
 
-            //return redirect()->to(route('trade.offer') . '#proceed_session')->with(['status'=>'email_checked', 'type'=> $type])->withInput();
-            return redirect()->route('trade.offer')->with(['status'=>'email_checked', 'type'=> $type])->withInput();
+            return redirect()->to(route('trade.offer') . '#proceed_session')->with(['status'=>'email_checked', 'type'=> $type])->withInput();
+            //return redirect()->route('trade.offer')->with(['status'=>'email_checked', 'type'=> $type])->withInput();
         }
 
         if($request->get('confirm_submit')){
