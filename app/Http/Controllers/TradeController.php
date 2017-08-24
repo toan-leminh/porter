@@ -40,7 +40,7 @@ class TradeController extends Controller
         $quoteData = $request->session()->pull('quote_data', null);
         $confirmBack = false;
         if($quoteData){
-            $request->session()->put('_old_input', $quoteData);
+            $request->session()->flashInput($quoteData);
             $confirmBack = true;
         }
 

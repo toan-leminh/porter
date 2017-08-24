@@ -48,7 +48,7 @@
 
                 <div class="form-group text-center">
                     <input type="submit" class="btn btn-primary width-100" name="confirm_submit" value="Send">
-                    <a class="btn btn-danger width-100" href="{{ route('trade.offer') }}">Cancel</a>
+                    <a class="btn btn-danger width-100" href="{{ route('trade.offer') }}">Back</a>
                 </div>
                 <br>
             </form>
