@@ -33,7 +33,7 @@ class QuoteDetail extends Model
      * @var array
      */
     protected $fillable = [
-        'quote_hd_id', 'name', 'quantity', 'price'
+        'quote_hd_id', 'item', 'qty', 'price', 'unit_price'
     ];
 
     /**

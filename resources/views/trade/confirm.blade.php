@@ -18,7 +18,7 @@
 
                 <div class="form-group {{ $errors->has('partner_email')  ? ' has-error' : '' }}">
                     <label  for="partner_email">To:</label>
-                    <input type="text" class="form-control" name="partner_email" id="partner_email" value="{{ $data['partner_email'] }}" placeholder="To">
+                    <input type="text" class="form-control" name="partner_email" id="partner_email" value="{{ $data['partner_email'] }}" placeholder="To" required>
                     @if ($errors->has('partner_email'))
                         <span class="help-block">
                             <strong>{{ $errors->first('partner_email') }}</strong>
@@ -28,7 +28,7 @@
 
                 <div class="form-group{{ $errors->has('mail_subject') ? ' has-error' : '' }}">
                     <label> Subject:</label>
-                    <input class="form-control" name="mail_subject" id="mail_subject" value="{{ $data['mail_subject'] }}">
+                    <input class="form-control" name="mail_subject" id="mail_subject" value="{{ $data['mail_subject'] }}" required>
                     @if ($errors->has('mail_subject'))
                         <span class="help-block">
                              <strong>{{ $errors->first('mail_subject') }}</strong>
@@ -38,17 +38,17 @@
 
                 <div class="form-group{{ $errors->has('mail_content') ? ' has-error' : '' }}">
                     <label> Message:</label>
-                    <textarea class="form-control" name="mail_content" id="mail_content" style="height: 200px">{{  $data['mail_content'] }}</textarea>
+                    <textarea class="form-control" name="mail_content" id="mail_content" style="height: 200px" required>{{  $data['mail_content'] }}</textarea>
                     @if ($errors->has('mail_content'))
                         <span class="help-block">
-                                <strong>{{ $errors->first('mail_content') }}</strong>
-                            </span>
+                            <strong>{{ $errors->first('mail_content') }}</strong>
+                        </span>
                     @endif
                 </div>
 
                 <div class="form-group text-center">
-                    <input type="submit" class="btn btn-primary" name="confirm_submit" value="Send">
-                    {{--<button class="btn btn-primary"> >> Proceed to confirm</button>--}}
+                    <input type="submit" class="btn btn-primary width-100" name="confirm_submit" value="Send">
+                    <a class="btn btn-danger width-100" href="{{ route('trade.offer') }}">Cancel</a>
                 </div>
                 <br>
             </form>

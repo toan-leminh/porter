@@ -65,7 +65,7 @@
                         @endif
                     </div>
 
-                    <div class="form-group {{ $errors->has('name') ? ' has-error' : '' }}">
+                    <div class="form-group {{ $errors->has('name') ? ' has-error' : '' }}" >
                         <label>By clicking this, we send 6 digit code to your email address.</label>
                         <div class="text-center">
                             <input type="submit" class="btn btn-primary" name="check_email_submit" value="> Proceed and check my email">
@@ -85,12 +85,14 @@
                             {{ session('error') }}
                         </div>
                     @endif
+                    <div id="proceed_session"></div>
 
-                    @if (session('status') && in_array(session('status'),['email_checked', 'trade_input']))
+                    @if ( $confirmBack || (session('status') && in_array(session('status'),['email_checked', 'trade_input'])))
+                    {{--@if(true)--}}
                     <label>Trading Partner</label>
                     <div class="form-group {{ $errors->has('partner_email') ? ' has-error' : '' }}">
                         <label  for="partner_email">Trading Partner's email address:</label>
-                        <input class="form-control" name="partner_email" id="partner_email" placeholder="partner@example.com" value="{{ old('partner_email') }}">
+                        <input class="form-control" name="partner_email" id="partner_email" placeholder="partner@example.com" value="{{ old('partner_email') }}" required>
                         @if ($errors->has('partner_email'))
                             <span class="help-block">
                                 <strong>{{ $errors->first('partner_email') }}</strong>
@@ -122,14 +124,14 @@
 
                     <div class="form-group">
                         <label  for="item_amount">Trade Item</label>
-                        <div class="col-xs-12 item-table" style="margin-left: 10px" data-prototype='
+                        <div class="item-table" style="margin-left: 10px" data-prototype='
                                         <tr data-index="__index__" class="item-row">
                                             <td><input class="form-control item-name" name="trade_item[__index__][name]"></td>
                                             <td><input class="form-control item-quantity" name="trade_item[__index__][quantity]"></td>
                                             <td><input class="form-control item-price" name="trade_item[__index__][price]"></td>
-                                            <td style="vertical-align: middle">
+                                            <td class="action_td">
                                                 <a href="#" class="add-item"><i class="fa fa-lg fa-plus"></i></a>
-                                                <a href="#" class="delete-item" style="margin-left: 15px"><i class="fa fa-lg fa-minus"></i></a>
+                                                <a href="#" class="left-10 delete-item"><i class="fa fa-lg fa-minus"></i></a>
                                             </td>
                                         </tr>'>
                             <small>Please enter trading item</small>
@@ -155,9 +157,9 @@
                                             <td><input class="form-control item-name" name="trade_item[{{$i}}][name]" value="{{ $item['name'] }}"></td>
                                             <td><input class="form-control item-quantity" name="trade_item[{{$i}}][quantity]" value="{{ $item['quantity'] }}"></td>
                                             <td><input class="form-control item-price" name="trade_item[{{$i}}][price]" value="{{ $item['price'] }}"></td>
-                                            <td style="vertical-align: middle">
-                                                <a href="#"><i class="fa fa-lg fa-plus"></i></a>
-                                                <a href="#" style="margin-left: 15px"><i class="fa fa-lg fa-minus"></i></a>
+                                            <td class="action_td">
+                                                <a href="#" class="add-item"><i class="fa fa-lg fa-plus"></i></a>
+                                                <a href="#" class="left-10 delete-item"><i class="fa fa-lg fa-minus"></i></a>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -166,9 +168,9 @@
                                             <td><input class="form-control item-name" name="trade_item[0][name]"></td>
                                             <td><input class="form-control item-quantity" name="trade_item[0][quantity]"></td>
                                             <td><input class="form-control item-price" name="trade_item[0][price]"></td>
-                                            <td style="vertical-align: middle">
-                                                <a href="#" class="add-item"><i class="fa fa-lg fa-plus"></i></a>
-                                                <a href="#" class="delete-item" style="margin-left: 15px"><i class="fa fa-lg fa-minus"></i></a>
+                                            <td class="action_td">
+                                                <a href="#" class="add-item" ><i class="fa fa-lg fa-plus"></i></a>
+                                                <a href="#" class="left-10 delete-item"><i class="fa fa-lg fa-minus"></i></a>
                                             </td>
                                         </tr>
                                     @endif
@@ -177,7 +179,7 @@
                             <div class="summary">
                                 <label>Money Transfer Fee</label>
                                 <input type="hidden" name="trading_fee" id="trading_fee" value="{{ old('trading_fee') }}" >
-                                <span class="pull-right" id="trading_fee_span">{{ old('trading_fee') }}</span>
+                                <span class="pull-right" id="trading_fee_span">{{ old('trading_fee', 'calculating') }}</span>
                             </div>
 
                         </div>
@@ -185,7 +187,7 @@
 
                     <div class="form-group">
                         <label for="total_amount">Total</label>
-                        <span class="pull-right" id="total_amount_span"> {{ old('total_amount') }}</span>
+                        <span class="pull-right" id="total_amount_span"> {{ old('total_amount', '0.00 + calculating') }}</span>
                         <input type="hidden" name="total_amount" id="total_amount" value="{{ old('total_amount') }}">
                         <div class="pull-right error" id="calculate_error_message"></div>
                     </div>
@@ -220,9 +222,8 @@
                         <div class="form-group{{ $errors->has('mail_content') ? ' has-error' : '' }}">
                             <label>Message</label>
                             <select class="form-control pull-right" name="mail_template" id="mail_template" style="width:200px">
-                                <option value=""></option>
                                 @foreach ($emailTemplates as $key => $template )
-                                    <option value="{{ $key }}"  {{ $key == old('mail_template') ?  'selected="selected"' : '' }} data-content="{{ $template['content'] }}">
+                                    <option value="{{ $key }}"  {{ $key == old('mail_template', 'default') ?  'selected="selected"' : '' }} data-content="{{ $template['content'] }}">
                                         {{ $template['name'] }}
                                     </option>
                                 @endforeach
@@ -240,7 +241,7 @@
                         <label  for="passcode">Passcode</label>
                         <div style="margin-left: 10px">
                             <small>Please enter passcode.  We sent the passcode to your email address.  If you have not received yet, please retype your email address.</small>
-                            <input class="form-control" name="passcode" id="passcode" value="{{ old('passcode') }}">
+                            <input class="form-control" name="passcode" id="passcode" value="{{ old('passcode') }}" required>
                         </div>
                         @if ($errors->has('passcode'))
                             <span class="help-block">
@@ -297,13 +298,26 @@
                 var html = prototype.replace(/__index__/g, maxIndex !=null ? Number(maxIndex) + 1 : 0);
                 $('tbody').append(html);
                 e.preventDefault();
+            // Change an item
+            }).on('change', 'input', function () {
+                updateMailContent();
+            });
+
+            // Update mail
+            updateMailContent();
+
+            // Change mail content
+            $('#mail_content').on('change', function () {
+                $('#mail_template option').each(function () {
+                    var $this = $(this);
+                    if($this.is(':selected') ){
+                        $this.data('changed', true);
+                    }
+                });
             });
 
             // Change mail template event
             $('#mail_template').on('change', function () {
-                var $selectedOption = $(this).find(':selected');
-                var mailPrototype = $selectedOption.data('content');
-                var template = $(this).val();
                 var itemQuantityPrice = '';
                 $('.item-row').each(function () {
                     var $row = $(this);
@@ -313,22 +327,7 @@
                     }
                 });
 
-                // Set email subject and content
-                if(template == 'default' && mailPrototype){
-                    console.log(mailPrototype);
-                    var  mailContent = mailPrototype.replace('__WHO_I_AM__', $('#type').val() == 1 ? 'sell' : 'purchase')
-                                    .replace('__ITEM_QUANTITY_PRICE__', itemQuantityPrice)
-                                    .replace('__FEE__', $('#trading_fee').val())
-                                    .replace('__TOTAL__', $('#total_amount').val())
-                                    .replace('__FIRST_NAME__', $('#first_name').val())
-                                    .replace('__LAST_NAME__', $('#last_name').val())
-                                    .replace(/\\n/g, '\\\n')
-                    ;
-                    $('#mail_content').text(mailContent);
-                    var subject = "Offering of XXX through My Transporter";
-                    subject = subject.replace('XXX', $('.item-name').val());
-                    $('#mail_subject').val(subject);
-                }
+                updateMailContent();
             });
 
             $('#item_amount, #item_currency, #trading_fee, #trading_currency').on('change', function () {
@@ -350,9 +349,6 @@
                             amount += $row.find('.item-price').val() * $row.find('.item-quantity').val();
                         }
                     });
-                    console.log(amount);
-                    console.log(itemCurrency);
-                    console.log(tradingCurrency);
 
                     // Call temporary quotes API using Ajax
                     $.ajax({
@@ -361,7 +357,7 @@
                         data: {
                             source: itemCurrency,
                             target: tradingCurrency,
-                            amount:  parseInt(amount)
+                            amount:  parseFloat(amount)
                         },
                         beforeSend: function( xhr ) {
                             $("body").addClass("loading");
@@ -381,18 +377,53 @@
                                     $('#trading_fee_span').text(response.data.fee + ' ' + itemCurrency);
                                     $('#trading_fee').val(response.data.fee);
                                     $('#calculate_error_message').text('');
+
                                 }else{
                                     // Alert error message
-                                    $('#calculate_error_message').text(response.status.message)
+                                    $('#calculate_error_message').text(response.status.message);
                                 }
                             })
                             .fail(function (response) {
                                 $('#calculate_error_message').text('Fail to call server api');
                             })
                             .always(function() {
+                                // Update mail content
+                                updateMailContent();
                                 $("body").removeClass("loading");
                             });
-                    ;
+
+                }
+            }
+
+            // Update mail content
+            function updateMailContent() {
+                var $selectedOption = $('#mail_template').find('option:selected');
+                var mailPrototype = $selectedOption.data('content');
+                var userChanged = $('#mail_template').data('changed');
+
+                //var template = $(this).val();
+                var itemQuantityPrice = '';
+                $('.item-row').each(function () {
+                    var $row = $(this);
+                    if($row.find('.item-price').val() && $row.find('.item-quantity').val()){
+                        itemQuantityPrice += $row.find('.item-name').val() +  '  ' + $row.find('.item-quantity').val() + '@' +
+                                $row.find('.item-price').val() + $('#trading_currency').val() +  "\n";
+                    }
+                });
+
+                if(mailPrototype && !userChanged){
+                    var  mailContent = mailPrototype.replace('__WHO_I_AM__', $('#type').val() == 1 ? 'sell' : 'purchase')
+                                    .replace('__ITEM_QUANTITY_PRICE__', itemQuantityPrice)
+                                    .replace('__FEE__', $('#trading_fee').val())
+                                    .replace('__TOTAL__', $('#total_amount').val())
+                                    .replace('__FIRST_NAME__', $('#first_name').val())
+                                    .replace('__LAST_NAME__', $('#last_name').val())
+                                    .replace(/\\n/g, '\\\n')
+                            ;
+                    $('#mail_content').text(mailContent);
+                    var subject = "Offering of XXX through My Transporter";
+                    subject = subject.replace('XXX', $('.item-name').val());
+                    $('#mail_subject').val(subject);
                 }
             }
         });

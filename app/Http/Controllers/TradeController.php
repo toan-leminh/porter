@@ -37,8 +37,12 @@ class TradeController extends Controller
     public function offer(Request $request)
     {
         // Get sessiondata and remove  if existed
-        $data = $request->session()->pull('quote_data', []);
-        $request->request = new ParameterBag($data);
+        $quoteData = $request->session()->pull('quote_data', null);
+        $confirmBack = false;
+        if($quoteData){
+            $request->session()->put('_old_input', $quoteData);
+            $confirmBack = true;
+        }
 
         // Get all countries
         $countries = DB::table('country_mst')->pluck('name', 'country_cd');
@@ -57,8 +61,7 @@ class TradeController extends Controller
             $emailTemplates[$i]['content'] = View::make($tmp['template'])->render();
         }
 
-
-        return view('trade.offer', compact('countries', 'emailTemplates', 'currencies'));
+        return view('trade.offer', compact('countries', 'emailTemplates', 'currencies', 'confirmBack'));
     }
 
     /**
@@ -100,6 +103,7 @@ class TradeController extends Controller
                 'name' => $firstName. $lastName, 'code' => $randomCode
             ]));
 
+            //return redirect()->to(route('trade.offer') . '#proceed_session')->with(['status'=>'email_checked', 'type'=> $type])->withInput();
             return redirect()->route('trade.offer')->with(['status'=>'email_checked', 'type'=> $type])->withInput();
         }
 
@@ -107,8 +111,8 @@ class TradeController extends Controller
             // Validate submit data
             $this->validate($request, [
                 'partner_email' => 'required|string|email|max:255',
-                'mail_subject' => 'required|string|max:255',
-                'mail_content' => 'required',
+                //'mail_subject' => 'required|string|max:255',
+                //'mail_content' => 'required',
                 'passcode' => 'required|string',
             ]);
 
@@ -126,7 +130,9 @@ class TradeController extends Controller
                 return redirect()->route('trade.confirm');
             }else{
 
-                return redirect()->route('trade.offer')->with(['error'=>'Email and Passcode are not matched. Please check again!'])->withInput();
+                return redirect()->route('trade.offer')->with([
+                    'error'=>'Email and Passcode are not matched. Please check again!',
+                ])->withInput();
             }
 
         }
@@ -146,7 +152,7 @@ class TradeController extends Controller
             return redirect()->route('trade.offer');
         }
 
-        return view('trade.confirm', compact('data'));
+        return view('trade.confirm', ['data' => $quoteData]);
     }
 
     /**
@@ -230,7 +236,12 @@ class TradeController extends Controller
         // Save to quote_detail table in database
         $quoteDetailList = [];
         foreach ($quoteData['trade_item'] as $item){
-            $quoteDetail = new QuoteDetail($item);
+            $quoteDetail = new QuoteDetail([
+                'item' => $item['name'],
+                'qty'   => $item['quantity'],
+                'unit_price' => $item['price'],
+                'price' => $item['quantity'] * $item['price'],
+            ]);
             $quoteDetailList[] = $quoteDetail;
         }
         $quoteHd->quoteDetails()->saveMany($quoteDetailList);
