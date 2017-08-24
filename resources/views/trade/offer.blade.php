@@ -73,8 +73,8 @@
                         </div>
                     </div>
 
-                    <br>
                     <div id="proceed_session"></div>
+                    <br>
                     @if (session('status') && session('status') == 'email_checked')
                         <div class="alert alert-success">
                             Email has been sent!
